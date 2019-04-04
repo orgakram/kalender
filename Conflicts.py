@@ -12,7 +12,7 @@ class Conflict:
     def check_for_conflict(event, other_event):
         #check if other events start already during my time or too early after my event finished
         other_start = other_event.start_time
-        if (other_start > event.start_time) and (other_start < event.end_time):
+        if (other_start >= event.start_time) and (other_start <= event.end_time):
             return Conflict("Der Termin '" + other_event.summary + "' fängt schon während des Termins '" + event.summary + "' an.")
         if (other_start < (event.end_time + datetime.timedelta(hours=Conflict.BUFFER_BETWEEN_EVENTS))) and (other_start > event.end_time):
             return Conflict("Der Termin '" + other_event.summary + "' fängt sehr schnell nach Termin '" + event.summary + "' an.")

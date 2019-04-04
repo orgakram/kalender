@@ -9,11 +9,20 @@ import pickle
 class Event:
 
     def __init__(self, data_map):
-        #still missing the fix for winter time (+01:00)
-        stripped_time2 = str(data_map['start']['dateTime']).replace("+02:00", "")
-        self.start_time = datetime.datetime.strptime(stripped_time2, '%Y-%m-%dT%H:%M:%S')
-        stripped_time3 = str(data_map['end']['dateTime']).replace("+02:00", "")
-        self.end_time = datetime.datetime.strptime(stripped_time3, '%Y-%m-%dT%H:%M:%S')
+        if ('dateTime' in data_map['start']):
+            raw_start_time = str(data_map['start']['dateTime']).replace("+02:00", "")
+            raw_start_time = raw_start_time.replace("+01:00", "")
+
+            raw_end_time = str(data_map['end']['dateTime']).replace("+02:00", "")
+            raw_end_time = raw_end_time.replace("+01:00", "")
+
+        else:
+            raw_start_time = data_map['start']['date']+"T02:00:00"
+            raw_end_time = data_map['start']['date']+"T20:00:00"
+
+        self.start_time = datetime.datetime.strptime(raw_start_time, '%Y-%m-%dT%H:%M:%S')
+        self.end_time = datetime.datetime.strptime(raw_end_time, '%Y-%m-%dT%H:%M:%S')
+
         self.summary =  data_map['summary']
         self.contact = data_map['creator']['email']
         self.day = self.start_time.date()
