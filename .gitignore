@@ -2,4 +2,6 @@ token.json
 credentials.json
 .idea/
 __pycache__/
+*.xml
+*.pck
 
