@@ -4,4 +4,4 @@ credentials.json
 __pycache__/
 *.xml
 *.pck
-
+*.csv
