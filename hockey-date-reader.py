@@ -34,14 +34,45 @@ home_game_description_template = 'Andreas Anpfiff {} - Spiel {}'
 away_game_description_template = 'Andreas Anpfiff {} - Spiel {}'
 location = 'Platzanlage'
 
-def parse_calendar(team_name, file_name, league_name, home_games_flag):
-    calendar_xml = untangle.parse(file_name)
-    entries=[]
+def parse_calendar_for_tournament(calendar_xml, home_games_flag):
+    key_days = []
+    games_of_day={}
+    for tag in calendar_xml.Liga.Tag:
+        hosting_club = tag.DNAM.cdata
+        #print(hosting_club)
+        if (our_team in hosting_club):
+            print("*** Spieltag ")
+            print(tag.DDAG.cdata)
+            print(tag.DLFD.cdata)
+            key_days.append(tag.DLFD.cdata)
+            games_of_day[tag.DLFD.cdata]=[]
+
     for gruppe in calendar_xml.Liga.Gruppe:
         for spiel in gruppe.Spiel:
-            visitor = spiel.STEG.cdata
+            #print(spiel.SDLF.cdata)
+            if (spiel.SDLF.cdata in key_days):
+                games_of_day[spiel.SDLF.cdata].append(spiel)
+
+
+    for day in key_days:
+        games = games_of_day[day]
+        print(f"Es gibt {len(games)} Spiele am {games[0].SDAG.cdata}")
+        earliest_start = datetime.datetime(2099, 2, 1, 12, 12)
+        for game in games:
+            time_kickoff = game.SUHR.cdata
+            hour = int(time_kickoff.partition(":")[0])
+            minutes = int(time_kickoff.partition(":")[-1])
+            zeit_zeit = datetime.datetime(2018, 2, 1, hour, minutes)
+            earliest_start = min(earliest_start, zeit_zeit)
+            print(f"aktueller Anfang ist {earliest_start.time()}")
+
+def parse_calendar(team_name, calendar_xml, league_name, home_games_flag):
+    entries = []
+    for gruppe in calendar_xml.Liga.Gruppe:
+        for spiel in gruppe.Spiel:
             if (home_games_flag):
                 hosting_team_name = str(spiel.STEA.cdata)
+                visitor = spiel.STEG.cdata
             else:
                 hosting_team_name = str(spiel.STEG.cdata)
                 visitor = spiel.STEA.cdata
@@ -56,7 +87,7 @@ def parse_calendar(team_name, file_name, league_name, home_games_flag):
                     reservation_times = calculate_start_and_end_of_reservation(kickoff_time, league_name)
                     line_entry = f"{team_name} - Anpfiff {kickoff_time} - Gast {visitor}, {date}, {reservation_times.start}, {date}, {reservation_times.end}, {all_day_event}, {description}, {location}\n"
                 else:
-                    description = home_game_description_template.format(kickoff_time, game_id)
+                    description = away_game_description_template.format(kickoff_time, game_id)
                     reservation_times = calculate_start_and_end_of_reservation(kickoff_time, league_name)
                     line_entry = f"{team_name} - Anpfiff {kickoff_time} - beim {visitor}, {date}, {kickoff_time}, {date}, {reservation_times.end}, {all_day_event}, {description}, {visitor}\n"
 
@@ -78,7 +109,8 @@ def retrieve_league_data(leagues, home_games_flag):
         if (league in tournaments):
             print(f"{league} hat Turnierbetrieb!")
         else:
-            new_entries = parse_calendar(team_name, file_name, league, home_games_flag)
+            calendar_xml = untangle.parse(file_name)
+            new_entries = parse_calendar(team_name, calendar_xml, league, home_games_flag)
             calendar_lines = calendar_lines + new_entries
 
     if (home_games_flag):
@@ -125,5 +157,8 @@ def calculate_start_and_end_of_reservation(time_kickoff : str, league : str):
     return calendar_start_end(start=start.time(), end=end.time())
 
 
-retrieve_league_data(leagues, home_games_flag)
-#calculate_start_and_end_of_reservation("10:00", "JP-MA")
+#retrieve_league_data(leagues, True)
+#retrieve_league_data(leagues, False)
+calendar_xml = untangle.parse("KB.xml")
+result = parse_calendar_for_tournament(calendar_xml, True)
+print(result)
