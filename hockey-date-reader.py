@@ -12,6 +12,8 @@ url_template = 'http://www.hbw-hockey.de/VVI-web/Ergebnisdienst/HED-XML.asp?XML=
 leagues = ['JP-MA', 'JP-WJB', 'JP-MB', 'JP-MJB', 'JP-KB']
 tournaments = ['JP-MB', 'JP-KB']
 calendar_start_end = collections.namedtuple('StartEnd', 'start, end')
+#see format at https://support.google.com/calendar/answer/37118?hl=en
+HEADER_LINE = 'Subject, Start Date, Start Time, End Date, End Time, All Day Event, Description, Location'
 pre_reservation = {}
 pre_reservation["JP-MA"]=30
 pre_reservation["JP-WJB"]=30
@@ -98,9 +100,11 @@ def parse_calendar(team_name, calendar_xml, league_name, home_games_flag):
 
 def retrieve_league_data(leagues, home_games_flag):
     calendar_lines=[]
+    calendar_lines.append(HEADER_LINE)
     for league in leagues:
         league_url = url_template.format(league)
         team_name = league.rpartition('-')[-1]
+        print(f"Working on team {team_name}")
         response = requests.get(league_url)
         file_name = f"{team_name}.xml"
         with open(file_name, "w") as text_file:
@@ -157,8 +161,8 @@ def calculate_start_and_end_of_reservation(time_kickoff : str, league : str):
     return calendar_start_end(start=start.time(), end=end.time())
 
 
-#retrieve_league_data(leagues, True)
-#retrieve_league_data(leagues, False)
-calendar_xml = untangle.parse("KB.xml")
-result = parse_calendar_for_tournament(calendar_xml, True)
-print(result)
+retrieve_league_data(leagues, True)
+retrieve_league_data(leagues, False)
+#calendar_xml = untangle.parse("KB.xml")
+#result = parse_calendar_for_tournament(calendar_xml, True)
+#print(result)
