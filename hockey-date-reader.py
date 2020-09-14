@@ -7,7 +7,7 @@ from shutil import copyfile
 
 #league_url = 'http://www.hbw-hockey.de/VVI-web/Ergebnisdienst/HED-XML.asp?XML=J&saison=FELD19&liga=BAW-JP-MA'
 
-url_template = 'http://www.hbw-hockey.de/VVI-web/Ergebnisdienst/HED-XML.asp?XML=J&saison=FELD19&liga=BAW-{}'
+url_template = 'http://www.hbw-hockey.de/VVI-web/Ergebnisdienst/HED-XML.asp?XML=J&saison=HALLE19&liga=BAW-{}'
 
 leagues = ['JP-MA', 'JP-WJB', 'JP-MB', 'JP-MJB', 'JP-KB']
 tournaments = ['JP-MB', 'JP-KB']
@@ -46,7 +46,6 @@ home_game_description_template = 'Andreas Anpfiff {} - Spiel {}'
 away_game_description_template = 'Andreas Anpfiff {} - Spiel {}'
 location = 'Platzanlage'
 
-#new_entries = parse_calendar_for_tournament(team_name, calendar_xml, league, home_games_flag)
 def parse_calendar_for_tournament(team_name, calendar_xml, league_name, home_games_flag):
     calendar_entries=[]
     key_days = []
@@ -54,22 +53,39 @@ def parse_calendar_for_tournament(team_name, calendar_xml, league_name, home_gam
     for tag in calendar_xml.Liga.Tag:
         hosting_club = tag.DNAM.cdata
         #print(hosting_club)
-        if (our_team in hosting_club):
-            print("*** Spieltag ")
-            print(tag.DDAG.cdata)
-            print(tag.DLFD.cdata)
-            key_days.append(tag.DLFD.cdata)
-            games_of_day[tag.DLFD.cdata]=[]
+        if (home_games_flag):
+            if (our_team in hosting_club):
+                print("*** Spieltag ")
+                print(tag.DDAG.cdata)
+                print(tag.DLFD.cdata)
+                key_days.append(tag.DLFD.cdata)
+                games_of_day[tag.DLFD.cdata]=[]
+        else:
+            if (our_team not in hosting_club):
+                key_days.append(tag.DLFD.cdata)
+                games_of_day[tag.DLFD.cdata]=[]
 
-    for gruppe in calendar_xml.Liga.Gruppe:
-        for spiel in gruppe.Spiel:
-            #print(spiel.SDLF.cdata)
-            if (spiel.SDLF.cdata in key_days):
-                games_of_day[spiel.SDLF.cdata].append(spiel)
+    if (home_games_flag):
+        for gruppe in calendar_xml.Liga.Gruppe:
+            for spiel in gruppe.Spiel:
+                #print(spiel.SDLF.cdata)
+                if (spiel.SDLF.cdata in key_days):
+                    games_of_day[spiel.SDLF.cdata].append(spiel)
+
+    else:
+        for gruppe in calendar_xml.Liga.Gruppe:
+            for spiel in gruppe.Spiel:
+                if (spiel.SDLF.cdata in key_days):
+                    if (spiel.STEA.cdata == our_team) or (spiel.STEG.cdata == our_team):
+                        games_of_day[spiel.SDLF.cdata].append(spiel)
 
 
     for day in key_days:
+        #print(day)
         games = games_of_day[day]
+        if (len(games) == 0):
+            #print(f"Keine Spiele am Tag {day}")
+            continue
         game_date = games[0].SDAG.cdata
         print(f"Es gibt {len(games)} Spiele am {game_date}")
         kickoff_time = datetime.datetime(2099, 2, 1, 12, 12)
@@ -97,6 +113,12 @@ def parse_calendar_for_tournament(team_name, calendar_xml, league_name, home_gam
             line_entry = f"{team_name} - Anpfiff {kickoff_time.time()} - Gast {visitors}, {game_date}, {start_time.time()}, {game_date}, {end_time.time()}, {all_day_event}, {description}, {location}\n"
             print(line_entry)
             calendar_entries.append(line_entry)
+        else:
+            print("trying...")
+            description = away_game_description_template.format(kickoff_time, game_ids).replace(',', ';')
+            line_entry = f"{team_name} - Anpfiff {kickoff_time.time()} - beim ???, {game_date}, {kickoff_time.time()}, {game_date}, {kickoff_time.time()}, {all_day_event}, {description}, ???\n"
+            calendar_entries.append(line_entry)
+            print(line_entry)
 
     return calendar_entries
 
@@ -198,8 +220,9 @@ def calculate_start_and_end_of_reservation(time_kickoff : str, league : str, num
     return calendar_start_end(start=start.time(), end=end.time())
 
 
-retrieve_league_data(leagues, True)
-#retrieve_league_data(leagues, False)
+#retrieve_league_data(leagues, True)
+retrieve_league_data(leagues, False)
 #calendar_xml = untangle.parse("KB.xml")
-#result = parse_calendar_for_tournament(calendar_xml, True, "JP-KB", "KB")
+#new_entries = parse_calendar_for_tournament(team_name, calendar_xml, league, home_games_flag)
+#result = parse_calendar_for_tournament("KB", calendar_xml, "JP-KB", False)
 #print(result)
